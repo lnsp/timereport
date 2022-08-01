@@ -1,0 +1,72 @@
+<!doctype html>
+<html class="bg-gray-100 text-gray-900 h-full" lang="de-DE">
+
+<head>
+  <title>{{ .Group }} &ndash; Timeseries</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.plot.ly/plotly-2.8.3.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        fontFamily: {
+          'sans': ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="h-full">
+  <div class="w-full flex flex-col h-full">
+    <div class="w-full py-4 flex justify-between items-center flex-wrap">
+      <div class="w-full sm:w-auto p-2">
+        <h1 class="text-2xl font-semibold">{{ .Group }}</h1>
+      </div>
+      <div>
+        <form class="flex flex-col gap-4 p-2" method="GET" action="/">
+          <div>
+            <input type="date" class="text-sm px-3 py-2 rounded" name="start" value="{{ .DateStart }}">
+            &mdash;
+            <input type="date" class="text-sm px-3 py-2 rounded" name="end" value="{{ .DateEnd }}">
+            <button role="submit" class="text-sm bg-blue-600 px-3 py-2 rounded text-white hover:bg-blue-700">Select</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div id="plot" class="flex-grow"></div>
+  </div>
+  <script>
+    let reports = JSON.parse("{{ .Reports }}");
+
+    // Collect all series
+    let seriesNames = new Set(reports.map(r => r.series)).keys();
+
+    let series = []
+    for (let name of seriesNames) {
+      // Find all reports with given series
+      let local = reports.filter(r => r.series === name)
+      series.push({
+        x: local.map(r => r.ts),
+        y: local.map(r => r.value),
+        text: local.map(r => name + ':' + r.metadata['commit']),
+        type: 'scatter',
+        name: name,
+      })
+    }
+
+    let layout = {
+      showlegend: false,
+      yaxis: {
+        title: 'runtime in s',
+      },
+    }
+
+    Plotly.newPlot('plot', series, layout);
+  </script>
+</body>
+
+</html>
