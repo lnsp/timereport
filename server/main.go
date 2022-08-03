@@ -23,6 +23,7 @@ type Report struct {
 
 func main() {
 	token := os.Getenv("VALAR_TOKEN")
+	securitytoken := os.Getenv("SECURITY_TOKEN")
 	kvKey, ok := os.LookupEnv("KV_KEY")
 	if !ok {
 		kvKey = "timeseries"
@@ -33,6 +34,10 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-TOKEN") != securitytoken {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		raw, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Println("reading payload:", string(raw), err)
