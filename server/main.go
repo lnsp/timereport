@@ -40,7 +40,7 @@ func main() {
 			return
 		}
 		log.Println("read payload ", string(raw))
-		var payload Report
+		var payload []Report
 		if err := json.Unmarshal(raw, &payload); err != nil {
 			log.Println("decoding payload:", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -49,10 +49,12 @@ func main() {
 		w.Write([]byte("ok\n"))
 
 		if token != "" {
-			// Attempt to write to KV
-			key := kvKey + "_" + payload.Timestamp.Format(KVDayFormat)
-			if err := ReportTemperature(token, kvProject, key, payload); err != nil {
-				log.Println("report temperature:", err)
+			for i := range payload {
+				// Attempt to write to KV
+				key := kvKey + "_" + payload[i].Timestamp.Format(KVDayFormat)
+				if err := ReportTemperature(token, kvProject, key, &payload[i]); err != nil {
+					log.Println("report temperature:", err)
+				}
 			}
 		}
 	})
@@ -61,7 +63,7 @@ func main() {
 	}
 }
 
-func ReportTemperature(token, project, key string, payload Report) error {
+func ReportTemperature(token, project, key string, payload *Report) error {
 	url := fmt.Sprintf("https://kv.valar.dev/%s/%s?op=append", project, key)
 
 	buf := new(bytes.Buffer)
